@@ -6,6 +6,7 @@
 
 #define STORE_MOVE_DELAY_MS  200  // 舵机旋转就位延时(ms)
 
+
 typedef enum
 {
     Store_NO1,
