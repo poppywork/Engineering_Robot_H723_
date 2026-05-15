@@ -66,6 +66,7 @@ struct arm_cmd_msg
     arm_mode_e ctrl_mode;
     arm_mode_e last_mode;
 };
+extern struct arm_cmd_msg arm_cmd;
 
 /** 关节电机角度速度处理相关函数 **/
 #define POS_DEADBAND_RAD        0.0002f
