@@ -598,6 +598,7 @@ void smooth_motion_7(hcan_t* hcan, motor_t* motor, float target_rad,float target
     mit_ctrl(hcan,motor,motor->id,target_rad, target_vel, kp, kd, target_torque);
 }
 
+
 void DMcontrol_motor_1(hcan_t* hcan, DMmotorControl* motor_control, float target_angle) {
     if (!motor_control->calibrated)
     {
