@@ -264,7 +264,6 @@ void PC_keyboard_mouse(const pc_control_t *pc_control)
 
 
 
-
 //    key_state_machine(&keyboard.r,pc_control->keyboard.bit.R);
 //    if (keyboard.r.state == KEY_PRESS_ONCE)
 //    {

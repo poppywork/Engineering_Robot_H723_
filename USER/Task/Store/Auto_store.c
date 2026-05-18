@@ -18,7 +18,6 @@ static store_step_e auto_store_step = STORE_STEP_IDLE;
 static uint8_t auto_store_skip = 0;
 static uint8_t auto_store_slot_idx = 0;
 
-
 void auto_store_init(void)
 {
     auto_store_step = STORE_STEP_IDLE;

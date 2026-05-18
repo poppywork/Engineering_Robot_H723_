@@ -648,4 +648,3 @@ void DMcontrol_motor_7(hcan_t* hcan,Gripper_mode_e Gripper_ctrl)
     smooth_motion_7(hcan, &motor[Motor7], target_rad, target_torque ,target_vel,target_kp,target_kd);
 }
 
-

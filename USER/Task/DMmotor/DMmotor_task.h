@@ -102,5 +102,4 @@ void DMcontrol_motor_6(hcan_t* hcan, DMmotorControl* motor_control, float target
 void DMcontrol_motor_7(hcan_t* hcan,Gripper_mode_e Gripper_ctrl);
 
 
-
 #endif //CTRBOARD_H7_ALL_DMMOTOR_TASK_H

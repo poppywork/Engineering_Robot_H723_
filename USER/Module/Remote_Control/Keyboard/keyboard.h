@@ -41,7 +41,6 @@ typedef struct {
 } key_status_t;
 
 
-
 /**
   * @brief     键盘鼠标数据结构体
   */

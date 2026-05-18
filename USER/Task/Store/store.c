@@ -16,7 +16,6 @@ StoreUnit store_unit2 = {
     .move_start_tick = 0
 };
 
-
 void store_init(void)
 {
     store_unit1.current_pos = Store_NO1;
