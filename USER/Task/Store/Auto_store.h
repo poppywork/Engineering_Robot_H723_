@@ -18,3 +18,4 @@ uint8_t auto_store_update(void);
 void auto_store_complete(void);
 
 #endif // AUTO_STORE_H
+

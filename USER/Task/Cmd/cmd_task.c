@@ -31,6 +31,7 @@
 #include "msg_freertos.h"
 #include "chassis_task.h"
 #include "tim.h"
+#include "store.h"
 /* -------------------------------- 线程间通讯Topics相关 ------------------------------- */
 
 static struct cmd_chassis_msg pc_cmd_data;
@@ -45,9 +46,7 @@ static void cmd_pub_init(void);
 static void cmd_sub_init(void);
 static void cmd_pub_push(void);
 static void cmd_sub_pull(void);
-void store1_ctrl(void);
-void store2_ctrl(void);
-void store_ctrl(void);
+
 /* -------------------------------- 线程间通讯Topics相关 ------------------------------- */
 /* -------------------------------- 调试监测线程相关 --------------------------------- */
 static uint32_t cmd_task_dwt = 0;   // 毫秒监测
@@ -256,41 +255,3 @@ void remote_to_cmd_sbus(void) {
     }
 }
 
-
-void store1_ctrl(void)
-{
-    if (store_mode1 == Store_NO1 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 1500);//一号柱在前
-    }
-    else if (store_mode1 == Store_NO2 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 612);//一号柱在前
-    }
-    else if (store_mode1 == Store_NO3 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 2388);//一号柱在前
-    }
-}
-
-void store2_ctrl(void)
-{
-    if (store_mode2 == Store_NO1 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 1500);//一号柱在前
-    }
-    else if (store_mode2 == Store_NO2 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 612);//一号柱在前
-    }
-    else if (store_mode2 == Store_NO3 )
-    {
-        __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, 2388);//一号柱在前
-    }
-}
-
-void store_ctrl(void)
-{
-    store1_ctrl();
-    store2_ctrl();
-}
