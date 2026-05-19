@@ -374,7 +374,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     } else if(pc_control->keyboard.bit.S) {
         nuc_keyboard.vx -= delta;
     } else {
-        nuc_keyboard.vx *= (1 - km_vy_ramp->calc(km_vy_ramp) * decay);
+        nuc_keyboard.vx *= (1 - nuc_km_vx_ramp->calc(nuc_km_vx_ramp) * decay);
     }
 
     // 左右方向（A/D -> vx）
@@ -383,7 +383,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     } else if(pc_control->keyboard.bit.D) {
         nuc_keyboard.vy += delta;
     } else {
-        nuc_keyboard.vy *= (1 - km_vy_ramp->calc(km_vy_ramp) * decay);
+        nuc_keyboard.vy *= (1 - nuc_km_vy_ramp->calc( nuc_km_vy_ramp) * decay);
     }
 
     // 旋转控制（Q/E）
@@ -392,7 +392,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     } else if(pc_control->keyboard.bit.E) {
         nuc_keyboard.vw += base_delta_w * 1.25f;
     } else {
-        nuc_keyboard.vw *= (1 - km_vw_ramp->calc(km_vw_ramp) * decay);
+        nuc_keyboard.vw *= (1 -nuc_km_vw_ramp->calc(nuc_km_vw_ramp) * decay);
     }
 
 //    // 死区处理
