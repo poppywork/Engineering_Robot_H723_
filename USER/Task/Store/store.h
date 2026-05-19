@@ -20,7 +20,6 @@ typedef struct {
     uint32_t move_start_tick;   // 开始旋转的时间戳
 } StoreUnit;
 
-
 extern StoreUnit store_unit1;
 extern StoreUnit store_unit2;
 

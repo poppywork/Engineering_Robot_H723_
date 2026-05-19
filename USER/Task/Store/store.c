@@ -46,7 +46,6 @@ void store_ctrl(void)
     store_unit_ctrl(&store_unit2, &htim1, TIM_CHANNEL_3);
 }
 
-
 /**
  * @brief 查找空/占位槽
  */

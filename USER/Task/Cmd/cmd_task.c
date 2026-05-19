@@ -55,7 +55,6 @@ static float cmd_task_delta = 0;    // 监测线程运行时间
 static float cmd_task_start_dt = 0; // 监测线程开始时间
 /* -------------------------------- 调试监测线程相关 --------------------------------- */
 
-
 extern sbus_data_t sbus_data_fdb;
 extern keyboard_control_t keyboard;
 extern keyboard_control_t nuc_keyboard;

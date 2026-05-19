@@ -27,7 +27,6 @@ void auto_store_init(void)
     auto_ctrl_mode = AUTO_RIGHT_PLACE;
 }
 
-
 /**
  * @brief 触发存储罐旋转（键盘或上位机调用）
  */

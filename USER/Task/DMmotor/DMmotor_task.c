@@ -19,6 +19,7 @@
 #include "drv_dwt.h"
 #include "PID.h"
 #include "cmd_task.h"
+#include "Auto_store.h"
 #include "msg_freertos.h"
 #include "transmission_task.h"
 #include "robot_task.h"
@@ -27,7 +28,6 @@
 
 static struct pc_cmd_arm_msg dm_receive_pc_cmd_arm_msg_data = {0};
 static subscriber_t *subscribe_cmd_pc_arm_topic;
-static int8_t pc_ctrl_process_last_state;
 static dm_arm_feedback_msg_t dm_arm_feedback_pub_msg = {0};
 static publisher_t *publish_dm_arm_feedback_topic = NULL;
 static subscriber_t *publish_dm_arm_ctrl_mode_topic = NULL;
@@ -58,12 +58,6 @@ Gripper_mode_e gripper_state = Gripper_OPEN;
 //PC_based_Controller,    //上位机控制
 static Arm_mode_e arm_control_state = User_defined_Controller;
 static Arm_mode_e arm_control_last_state;
-volatile static Auto_ctrl_mode auto_ctrl_mode = AUTO_RIGHT_PLACE ;
-//AUTO_WAIT,         // 0: 等待
-//AUTO_RIGHT_PLACE,   // 1: 左边放置
-//AUTO_RIGHT_GRAB,    // 2: 左边抓取
-//AUTO_LEFT_PLACE,  // 3: 右边放置
-//AUTO_LEFT_GRAB    // 4: 右边抓取
 extern QueueHandle_t xControlQueue;
 
 
@@ -482,19 +476,29 @@ void DMmotorTask_Entry(void const * argument)
         {
             dm_pc_motor_angles[i] = dm_receive_pc_cmd_arm_msg_data.joint_pos[i] * 57.3f;
         }
-        DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_pc_motor_angles[Motor1]);
-        DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_pc_motor_angles[Motor2]);
-        DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_pc_motor_angles[Motor3]);
-        DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_pc_motor_angles[Motor4]);
-        DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_pc_motor_angles[Motor5]);
-        DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_pc_motor_angles[Motor6]);
-        DMcontrol_motor_7(&hfdcan2,dm_receive_pc_cmd_arm_msg_data.gripper_ctrl);//夹爪控制
-        //用于循环抓取演示demo//上位机用的是6个步骤所以这里是6
-        if(dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state == 6 && pc_ctrl_process_last_state != 6)//完成第一个步骤
+
+        /* 检测键盘触发信号 */
+        if (auto_store_kb_trigger)
         {
-            auto_ctrl_mode = (auto_ctrl_mode % 4) + 1;
+            auto_store_trigger(auto_store_kb_target);
+            auto_store_kb_trigger = 0;
         }
-        pc_ctrl_process_last_state = dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state;
+
+        /* 存储罐就位状态机 */
+        uint8_t arm_execute = auto_store_update();
+
+        /* 机械臂动作执行 */
+        if (arm_execute) {
+            DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_pc_motor_angles[Motor1]);
+            DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_pc_motor_angles[Motor2]);
+            DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_pc_motor_angles[Motor3]);
+            DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_pc_motor_angles[Motor4]);
+            DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_pc_motor_angles[Motor5]);
+            DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_pc_motor_angles[Motor6]);
+            auto_store_complete();
+        }
+
+        DMcontrol_motor_7(&hfdcan2, dm_receive_pc_cmd_arm_msg_data.gripper_ctrl);//夹爪控制
     }
 
 
@@ -733,4 +737,3 @@ void DMcontrol_motor_7(hcan_t* hcan,Gripper_mode_e Gripper_ctrl)
 
     smooth_motion_7(hcan, &motor[Motor7], target_rad, target_torque ,target_vel,target_kp,target_kd);
 }
-
