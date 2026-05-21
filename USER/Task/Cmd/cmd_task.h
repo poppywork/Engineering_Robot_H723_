@@ -10,7 +10,6 @@ void remote_to_cmd_sbus(void);
 void Gripper_ctrl(void);
 
 
-
 typedef enum
 {
     Gripper_OPEN,
@@ -23,12 +22,12 @@ typedef enum
     PC_based_Controller,    //上位机控制
 } Arm_mode_e;
 
-typedef enum
-{
-    Store_NO1,
-    Store_NO2,
-    Store_NO3,
-} Store_mode_e;
+// typedef enum
+// {
+//     Store_NO1,
+//     Store_NO2,
+//     Store_NO3,
+// } Store_mode_e;
 
 typedef enum
 {
