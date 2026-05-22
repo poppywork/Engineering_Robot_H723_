@@ -66,8 +66,7 @@ static Arm_mode_e dm_arm_ctrl_mode;
 extern struct referee_fdb_msg referee_fdb;
 struct cmd_chassis_msg cmd_chassis;
 extern Gripper_mode_e gripper_state ;
-static Store_mode_e store_mode1 = Store_NO1;
-static Store_mode_e store_mode2 = Store_NO1;
+
 /* 外部变量声明 */
 /*键盘加速度的斜坡*/
 ramp_obj_t *km_vx_ramp = NULL;;//x轴控制斜坡
@@ -91,8 +90,7 @@ void CmdTask_Entry(void const * argument)
     sbus_data_fdb.sw4 = RC_UP;
 
     vt13_remote_data_init();
-    store_mode1 = Store_NO1;//初始化储存罐
-    store_mode2 = Store_NO1;
+
     km_vx_ramp = ramp_register(0, 200); //2500000
     km_vy_ramp = ramp_register(0, 200);  // 0 -2的累加次数
     km_vw_ramp = ramp_register(0, 200);

@@ -26,12 +26,13 @@
 
 /* -------------------------------- 线程间通讯Topics相关 ------------------------------- */
 
-static struct pc_cmd_arm_msg dm_receive_pc_cmd_arm_msg_data = {0};
+struct pc_cmd_arm_msg dm_receive_pc_cmd_arm_msg_data = {0};
 static subscriber_t *subscribe_cmd_pc_arm_topic;
 static dm_arm_feedback_msg_t dm_arm_feedback_pub_msg = {0};
 static publisher_t *publish_dm_arm_feedback_topic = NULL;
 static subscriber_t *publish_dm_arm_ctrl_mode_topic = NULL;
 extern sbus_data_t sbus_data_fdb;
+static uint8_t arm_execute;
 
 static void DMmotor_topic_pub_init(void);
 static void DMmotor_topic_sub_init(void);
@@ -75,7 +76,7 @@ struct arm_cmd_msg arm_cmd = {
         .last_mode = ARM_DISABLE
 };
 
-void arm_mode_pc_change_to_pc_init_process(void)
+void arm_mode_user_change_to_pc_init_process(void)
 {
     dm_motor_enable(&hfdcan3, &motor[Motor1]);
     vTaskDelay(300); // 延时，等待电机稳定
@@ -390,6 +391,8 @@ void DMmotorTask_Entry(void const * argument)
     /* ------------------------ 规划器与执行器分割线 --------------------------------- */
 
 /* -------------------------------- 外设初始化段落 ------------------------------- */
+
+    auto_store_init();
     for (int i = 0; i < 6; i++) {
         motor_controls[i].current_angle_rad = 0.0f;
         motor_controls[i].last_angle_rad = 0.0f;
@@ -457,8 +460,9 @@ void DMmotorTask_Entry(void const * argument)
     }
     else if(dm_arm_feedback_pub_msg.arm_control_state == PC_based_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
     {
-        arm_mode_pc_change_to_pc_init_process();
+        arm_mode_user_change_to_pc_init_process();
     }
+
     if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller)//自定义控制模式
     {
 
@@ -485,7 +489,7 @@ void DMmotorTask_Entry(void const * argument)
         }
 
         /* 存储罐就位状态机 */
-        uint8_t arm_execute = auto_store_update();
+        arm_execute = auto_store_update();
 
         /* 机械臂动作执行 */
         if (arm_execute) {
