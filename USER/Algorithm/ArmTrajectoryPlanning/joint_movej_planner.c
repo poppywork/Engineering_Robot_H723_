@@ -218,7 +218,7 @@ bool JointMoveJ_Start(JointMoveJPlanner_t *jp,
 
     /* 启动内部标量梯形/三角轨迹
      * 注意：这里规划的不是某个具体关节，而是统一进度 s(t) */
-    if (!TrajTimeSync_Start(&jp->prof, jp->vs_max, jp->as_max))
+    if (!TrajTimeSync_Start(&jp->prof, jp->vs_max, jp->as_max))//得出让进度条0-1,一起开始一起结束的加速时间和匀速时间
     {
         jp->state = JP_FAULT;
         return false;
@@ -287,7 +287,7 @@ bool JointMoveJ_Update(JointMoveJPlanner_t *jp, float dt)
 
         /* v_ref = dq * sdot
          * 表示当前总进度速度 sdot 下，本关节应该用多快 */
-        jp->v_ref[i] = jp->dq[i] * sdot;
+        jp->v_ref[i] = jp->dq[i] * sdot;   //sdot = 1/t = Vref/dθ    s为进度速度
     }
 
     /* 如果内部标量轨迹已经结束，则把末值强制钉在终点 */

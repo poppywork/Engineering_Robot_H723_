@@ -3,6 +3,7 @@
 //
 
 #include "KinematicSDHdsp.h"
+#include "usart_task.h"
 
 /**  关节角θ  沿 z?轴的偏移量 d?  沿 x?轴的长度 a?  绕 x?轴的扭转角α  **/
 // q[6] 要传弧度
@@ -16,7 +17,7 @@
 //        {0.0f, 0.0f,   0.0f,   -M_PI_2},
 //        {0.0f, 0.0f,   0.0f,   0.0f}
 //};
-
+////标准DH参数表
 const SDH_Param_t arm_sdh_table[6] = {
         {0.0f,  0.0f,       0.0f,       -M_PI_2},
         {-2.617993878f,  0.0f,       0.295f,      0.0f},
@@ -300,6 +301,7 @@ static void Vec3NormalizeSafe(float v[3])
     }
 }
 
+/*进行施密特正交化(旋转矩阵经过之前的浮点数计算，产生了小误差，现在以x为标准，重建标准正交矩阵，不要让后面运算误差继续扩大)*/
 static void NormalizeRotationMatrix3x3(const float R_in[9], float R_out[9])
 {
     /* 按列做 Gram-Schmidt，更符合旋转矩阵“列向量是坐标轴”的含义 */
@@ -422,7 +424,7 @@ bool SDH_FK_ToPose6D(const SDH_Param_t table[6], const float q[6], Pose6D_t *pos
         return 0;
     }
 
-    if (!SDH_ForwardKinematics(table, q, T06_buf, &T06)) {
+    if (!SDH_ForwardKinematics(table, q, T06_buf, &T06)) {//得出6转到0的旋转矩阵
         return false;
     }
 
@@ -557,29 +559,34 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
          * 得：
          *   R = ±sqrt(rho^2 - ds^2)
          * ===================================================== */
-        if (rho < fabsf(ds) - EPS) {
+        if (rho < fabsf(ds) - EPS) //太靠近基坐标系会碰撞
+        {
             *count_q123 = 0;
             return;
         }
 
-        if (fabsf(rho - fabsf(ds)) <= EPS) {
+        if (fabsf(rho - fabsf(ds)) <= EPS)
+        {
             /* q1 奇异：两组肩型退化为一组 */
-            float q1_keep = (q_last != NULL) ? q_last[0] : 0.0f;
+            float q1_keep = (q_last != NULL) ? q_last[0] : 0.0f;//进入奇异使用上一时刻的 J1 值（q_last[0]）作为当前解,如果无历史值,则默认取 0.0
+
             q1_list[0] = IK_WrapToPi(q1_keep);
             q1_list[1] = IK_WrapToPi(q1_keep);
             q1_state[0] = -1;
             q1_state[1] = -1;
-        } else {
+        }
+        else
+        {
             float phi  = atan2f(yw, xw);
-            float root = sqrtf(rho2 - ds * ds);
+            float root = sqrtf(rho2 - ds * ds);//勾股定理
 
             /* 先求真实 theta1，再减去偏置 */
             {
                 float theta1_a = phi - atan2f(ds,  root);
                 float theta1_b = phi - atan2f(ds, -root);
 
-                q1_list[0] = IK_WrapToPi(theta1_a - table[0].theta_offset);
-                q1_list[1] = IK_WrapToPi(theta1_b - table[0].theta_offset);
+                q1_list[0] = IK_WrapToPi(theta1_a - table[0].theta_offset);//要求的关节一的角度为基座标系和连杆1的夹角不是和末端在水平面投影到基座标系的夹角
+                q1_list[1] = IK_WrapToPi(theta1_b - table[0].theta_offset);//没有奇异的话一般有两个解
 
                 q1_state[0] = 1;
                 q1_state[1] = 1;
@@ -607,7 +614,7 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
          *   D = cos(t3 + psi)
          * 不是 cos(gamma)
          * ===================================================== */
-        for (ind_arm = 0; ind_arm < 2; ++ind_arm) {
+        for (ind_arm = 0; ind_arm < 2; ++ind_arm) {//上面的公式解法与林佩群有些不同，将xz看成一个类似xy平面，通过矢量等式得出θ2、θ3
             float theta1;
             float c1, s1;
             float Rproj;
@@ -628,7 +635,7 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
             X = Rproj;
             Z = d1 - zw;
 
-            Lf  = sqrtf(a3 * a3 + d4 * d4);
+            Lf  = sqrtf(a3 * a3 + d4 * d4);////接下来的解算有点看不懂,用到了比较抽象的解算方法（头）
             psi = atan2f(d4, a3);
 
             if (fabsf(a2) < EPS || Lf < EPS) {
@@ -646,7 +653,7 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
             delta = acosf(D);
 
             /* 两组肘型 */
-            theta3_a =  delta - psi;
+            theta3_a =  delta - psi;////得出两个θ3的解   ////接下来的解算有点看不懂,用到了比较抽象的解算方法（尾）
             theta3_b = -delta - psi;
 
             /* 对应两组 theta2 */
@@ -656,11 +663,12 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
                 float sB = sinf(theta3_b + psi);
                 float cB = cosf(theta3_b + psi);
 
-                theta2_a = atan2f(Z, X) - atan2f(Lf * sA, a2 + Lf * cA);
+                theta2_a = atan2f(Z, X) - atan2f(Lf * sA, a2 + Lf * cA);////得出两个θ2的解
                 theta2_b = atan2f(Z, X) - atan2f(Lf * sB, a2 + Lf * cB);
             }
 
-            if (fabsf(fabsf(D) - 1.0f) <= EPS) {
+            if (fabsf(fabsf(D) - 1.0f) <= EPS)
+            {
                 /* q2/q3 奇异：肘伸直/肘折叠 */
                 q123_set[count][0] = IK_WrapToPi(q1_list[ind_arm]);
                 q123_set[count][1] = IK_WrapToPi(theta2_a - table[1].theta_offset);
@@ -1129,7 +1137,7 @@ int IK_Solve_All(const SDH_Param_t *table,
     }
 
     /* 1) 目标位姿 -> R06 + 腕心 pw */
-    IK_TargetPoseToR06Pw(target, wrist_offset, R06, pw);
+    IK_TargetPoseToR06Pw(target, wrist_offset, R06, pw);//将偏置向量转到基座标系，然后用目标向量减去这个向量，然后得出腕心相对于基坐标系的xyz
 
     /* 2) 解前三轴全部分支 */
     IK_Solve_Q123_All(table, pw, q_last, q123_set, flag_q1_arm, flag_q23, &count_q123);
@@ -1213,7 +1221,7 @@ int IK_Solve_All(const SDH_Param_t *table,
     /* 6) 选最优解 */
     IK_Select_Best(local_cand, cand_count, q_last, q_best);
 
-    /* 7) 输出候选解 */
+    /* 7) 输出候选解（提供分析调试） */
     if (cand_out != NULL) {
         for (i = 0; i < cand_count; i++) {
             cand_out[i] = local_cand[i];
@@ -1223,6 +1231,7 @@ int IK_Solve_All(const SDH_Param_t *table,
     if (cand_count_out != NULL) {
         *cand_count_out = cand_count;
     }
+
 
     /* 8) 判断是否真的选到了有效解 */
     {
@@ -1247,14 +1256,18 @@ static void JointLimit_EncToModel(const JointLimit_t *limit_enc,
                                   JointLimit_t *limit_model)
 {
     int i;
-    for (i = 0; i < 6; i++) {
+    for (i = 0; i < 6; i++)
+    {
         float a = sign_map[i] * (limit_enc->min[i] - q_zero[i]);
         float b = sign_map[i] * (limit_enc->max[i] - q_zero[i]);
 
-        if (a <= b) {
+        if (a <= b)
+        {
             limit_model->min[i] = a;
             limit_model->max[i] = b;
-        } else {
+        }
+        else
+        {
             limit_model->min[i] = b;
             limit_model->max[i] = a;
         }
@@ -1265,7 +1278,7 @@ static void Joint_EncToModel(const float q_enc[6], float q_model[6])
 {
     int i;
     for (i = 0; i < 6; i++) {
-        q_model[i] = joint_sign[i] * (q_enc[i] - joint_zero[i]);
+        q_model[i] = joint_sign[i] * (q_enc[i] - joint_zero[i]);//将电机反馈的角度转换成适合模型的角度，这里因为达妙电机方向居然不一样的原因，会有转换的步骤
     }
 }
 
@@ -1309,7 +1322,9 @@ int IK_Solve_All_Enc(const float wrist_offset[3],
     float q_best_model[6];
     int ok;
 
-    if (!joint_map_inited) {
+    if (!joint_map_inited)
+    {
+
         Kinematic_MapInit();
     }
 
@@ -1324,10 +1339,12 @@ int IK_Solve_All_Enc(const float wrist_offset[3],
                       ori_tol,
                       q_best_model,
                       cand_out,
-                      cand_count_out);
+                      cand_count_out);//得出一组关节组到达目标点的最优组
 
     if (!ok) {
+
         return 0;
+
     }
 
     Joint_ModelToEnc(q_best_model, q_best_enc);

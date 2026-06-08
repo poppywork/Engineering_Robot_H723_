@@ -71,7 +71,7 @@
 #define ALGO_INPUT_MODE_DEMO_POSE6D    4
 
 /* 在这里切换输入模式 */
-#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_MANUAL_API
+#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_TEST_CASE
 
 /* -------------------------------- 离散控制参数 -------------------------------- */
 #define ALGO_DISCRETE_QUEUE_CAPACITY   16u
@@ -175,8 +175,6 @@ static uint32_t g_test_next_index = 0;
 /* -------------------------------- 内部函数声明 -------------------------------- */
 static bool AlgorithmTask_IsSettled3FromOutput(const AlgoOutput_t *out);
 
-static void AlgorithmTask_DiscreteQueueInit(void);
-static bool AlgorithmTask_DiscreteQueuePush(const AlgorithmTask_DiscreteCmd_t *cmd);
 static bool AlgorithmTask_DiscreteQueuePop(AlgorithmTask_DiscreteCmd_t *cmd);
 static uint16_t AlgorithmTask_DiscreteQueueCount(void);
 
@@ -438,8 +436,8 @@ static void AlgorithmTask_SourceFillStep(const AlgoFeedback_t *fb, const AlgoOut
 #if (ALGO_INPUT_MODE == ALGO_INPUT_MODE_MANUAL_API)
     /* 手动API模式不自动生成目标；
        外部通过 AlgorithmTask_PostPoseTarget / XYZRYP 接口入队 */
-    AlgorithmTask_PostPoseTargetXYZRYP_Rad(xxx, yyy, zzz,
-                                           0.0f, 3.141592503f, -1.570796371f);
+//    AlgorithmTask_PostPoseTargetXYZRYP_Rad(xxx, yyy, zzz,
+//                                           0.0f, 3.141592503f, -1.570796371f);
 #endif
 }
 
@@ -481,7 +479,7 @@ static void AlgorithmTask_DiscreteExecutorStep(const AlgoFeedback_t *fb, const A
 
     now_ms = algorithm_subscribe_arm_feedback_data.tick_ms;
 
-    /* 还没有正在执行的点，则尝试从队列中取下一个点 */
+    /* 还没有正在执行的点,则尝试从队列中取下一个点 */
     if (!g_discrete_rt.waiting_finish)
     {
         if (((out->planner_state == JP_IDLE) || (out->planner_state == JP_DONE)) &&
@@ -569,16 +567,16 @@ void AlgorithmTask_Entry(void const * argument)
 {
 /* -------------------------------- 外设初始化段落 ------------------------------- */
     Init_KalmanFiltersOne(KALMAN_F, KALMAN_H, KALMAN_Q, KALMAN_R);
-//    /* MoveJ 初始化：只做一次 */
-//    /* Algo 初始化：只做一次 */
-//    Algo_InitContext();
-//    memset(&g_algo_out, 0, sizeof(g_algo_out));
-//    memset(&g_algo_fb, 0, sizeof(g_algo_fb));
-//    memset(&g_discrete_rt, 0, sizeof(g_discrete_rt));
-//
-//    AlgorithmTask_DiscreteQueueInit();
-//    g_demo_sent = 0;
-//    g_test_next_index = 0;
+    /* MoveJ 初始化：只做一次 */
+    /* Algo 初始化：只做一次 */
+    Algo_InitContext();
+    memset(&g_algo_out, 0, sizeof(g_algo_out));
+    memset(&g_algo_fb, 0, sizeof(g_algo_fb));
+    memset(&g_discrete_rt, 0, sizeof(g_discrete_rt));
+
+    AlgorithmTask_DiscreteQueueInit();
+    g_demo_sent = 0;
+    g_test_next_index = 0;
 /* -------------------------------- 外设初始化段落 ------------------------------- */
 
 /* -------------------------------- 线程间Topics初始化 ------------------------------- */
@@ -612,23 +610,24 @@ void AlgorithmTask_Entry(void const * argument)
             xQueueSend(xControlQueue, filtered_data, 0);
         }
 
-//        /* 1) 从Topic构造反馈 */
-//        AlgorithmTask_BuildFeedback(&g_algo_fb);
-//
-//        /* 2) 喂给算法层 */
-//        Algo_SetFeedback(&g_algo_fb);
-//
-//        /* 3) 根据当前输入模式填充离散队列 */
-//        AlgorithmTask_SourceFillStep(&g_algo_fb, &g_algo_out);
-//
-//        /* 4) 离散执行器：统一发点/等完成/再发下一个 */
-//        AlgorithmTask_DiscreteExecutorStep(&g_algo_fb, &g_algo_out);
-//
-//        /* 5) 跑一步算法 */
-//        Algo_Step(algorithm_task_dt);
-//
-//        /* 6) 获取当前输出 */
-//        Algo_GetOutput(&g_algo_out);
+        /* 1) 从Topic构造反馈 */
+        AlgorithmTask_BuildFeedback(&g_algo_fb);
+
+        /* 2) 喂给算法层 */
+        Algo_SetFeedback(&g_algo_fb); //根据FK得出工具在基座标系上的坐标和朝向
+
+        /* 3) 根据当前输入模式填充离散队列 */
+        AlgorithmTask_SourceFillStep(&g_algo_fb, &g_algo_out);
+
+        /* 4) 离散执行器：统一发点/等完成/再发下一个 */
+        AlgorithmTask_DiscreteExecutorStep(&g_algo_fb, &g_algo_out);
+
+        /* 5) 跑一步算法 */
+        Algo_Step(algorithm_task_dt);
+
+        /* 6) 获取当前输出 */
+        Algo_GetOutput(&g_algo_out);
+
 
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 

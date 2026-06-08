@@ -81,87 +81,47 @@ struct arm_cmd_msg arm_cmd = {
         .last_mode = ARM_DISABLE
 };
 
-void arm_mode_pc_change_to_pc_init_process(void)
+void arm_mode_change_init_process(float motor_angle[6])
 {
     dm_motor_enable(&hfdcan3, &motor[Motor1]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor1].id, -dm_pc_motor_angles[0]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan3, motor[Motor1].id, -motor_angle[0]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
     dm_motor_enable(&hfdcan3, &motor[Motor2]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor2].id, dm_pc_motor_angles[1]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan3, motor[Motor2].id, motor_angle[1]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
 
     dm_motor_enable(&hfdcan2, &motor[Motor3]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor3].id, dm_pc_motor_angles[2]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan2, motor[Motor3].id, motor_angle[2]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
     dm_motor_enable(&hfdcan2, &motor[Motor4]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor4].id, -dm_pc_motor_angles[3]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan2, motor[Motor4].id, -motor_angle[3]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
     dm_motor_enable(&hfdcan2, &motor[Motor5]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor5].id, dm_user_motor_angles[4]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan2, motor[Motor5].id, motor_angle[4]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
     dm_motor_enable(&hfdcan2, &motor[Motor6]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor6].id, -dm_pc_motor_angles[5]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
+    pos_ctrl(&hfdcan2, motor[Motor6].id, -motor_angle[5]/57.3f, 0.5f); // 发送控制命令
+    vTaskDelay(200); // 延时，等待电机稳定
 
     dm_motor_enable(&hfdcan2, &motor[Motor7]);//不用校准//开始发送夹爪初始化控制指令
-    vTaskDelay(300); // 延时，等待电机稳定
+    vTaskDelay(200); // 延时，等待电机稳定
 
     arm_cmd.ctrl_mode = ARM_ENABLE; // 使能机械臂
     arm_cmd.last_mode = ARM_ENABLE;
-    vTaskDelay(2000); // 延时，等待电机稳定
+    vTaskDelay(1000); // 延时，等待电机稳定
 }
 
-void arm_mode_pc_change_to_user_init_process(void)
-{
-    dm_motor_enable(&hfdcan3, &motor[Motor1]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor1].id, -dm_user_motor_angles[0]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    dm_motor_enable(&hfdcan3, &motor[Motor2]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor2].id, dm_user_motor_angles[1]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-
-    dm_motor_enable(&hfdcan2, &motor[Motor3]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor3].id, dm_user_motor_angles[2]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    dm_motor_enable(&hfdcan2, &motor[Motor4]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor4].id, -dm_user_motor_angles[3]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    dm_motor_enable(&hfdcan2, &motor[Motor5]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor5].id, dm_user_motor_angles[4]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    dm_motor_enable(&hfdcan2, &motor[Motor6]);
-    vTaskDelay(300); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor6].id, -dm_user_motor_angles[5]/57.3f, 0.5f); // 发送控制命令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    dm_motor_enable(&hfdcan2, &motor[Motor7]);//不用校准//开始发送夹爪初始化控制指令
-    vTaskDelay(300); // 延时，等待电机稳定
-
-    arm_cmd.ctrl_mode = ARM_ENABLE; // 使能机械臂
-    arm_cmd.last_mode = ARM_ENABLE;
-    vTaskDelay(2000); // 延时，等待电机稳定
-}
 
 
 void arm_cmd_enable(void) {
@@ -270,8 +230,8 @@ static void DMmotor_apply_movej_ref(const movej_ref_msg_t *ref)
     }
 
     /* 按你原来的方向定义修正，1轴通常要核对是否需要负号 */
-    pos_ctrl(&hfdcan3, motor[Motor1].id, pos_cmd[0], vel_cmd[0]);
-    pos_ctrl(&hfdcan3, motor[Motor2].id,  pos_cmd[1], vel_cmd[1]);
+    pos_ctrl(&hfdcan2, motor[Motor1].id, pos_cmd[0], vel_cmd[0]);
+    pos_ctrl(&hfdcan2, motor[Motor2].id,  pos_cmd[1], vel_cmd[1]);
     pos_ctrl(&hfdcan2, motor[Motor3].id,  pos_cmd[2], vel_cmd[2]);
     pos_ctrl(&hfdcan2, motor[Motor4].id, pos_cmd[3], vel_cmd[3]);
     pos_ctrl(&hfdcan2, motor[Motor5].id, pos_cmd[4], vel_cmd[4]);
@@ -392,7 +352,7 @@ void DMmotorTask_Entry(void const * argument)
     /** 此任务线程为机械臂运动学逆解算的执行层 **/
     /** 含义是：algorithm线程完成FK IK解算并且实时完成时间同步规划器运算，以及关节轨迹规划器运算，发送目标运动角度和运动速度到此dmmotor线程开始目标执行 **/
     /** 为了避免执行器和规划器的调度误差，需要在执行器层给速度和角度添加误差跟踪PID **/
-    // execute_track_movej_planner_pid = pid_register(&execute_track_movej_config);
+     execute_track_movej_planner_pid = pid_register(&execute_track_movej_config);
     /* ------------------------ 规划器与执行器分割线 --------------------------------- */
 
 /* -------------------------------- 外设初始化段落 ------------------------------- */
@@ -403,14 +363,14 @@ void DMmotorTask_Entry(void const * argument)
         motor_controls[i].calibrated = 0;
     }
 
-    dm_motor_enable(&hfdcan3, &motor[Motor1]);
+    dm_motor_enable(&hfdcan2, &motor[Motor1]);
     vTaskDelay(200); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor1].id, 0, 1.0f); // 发送控制命令
+    pos_ctrl(&hfdcan2, motor[Motor1].id, 0, 1.0f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
-    dm_motor_enable(&hfdcan3, &motor[Motor2]);
+    dm_motor_enable(&hfdcan2, &motor[Motor2]);
     vTaskDelay(200); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan3, motor[Motor2].id, 0, 1.0f); // 发送控制命令
+    pos_ctrl(&hfdcan2, motor[Motor2].id, 0, 1.0f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
     for(int i=2;i<6;i++)
@@ -450,65 +410,65 @@ void DMmotorTask_Entry(void const * argument)
 
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 
-        if (xQueueReceive(xControlQueue, dm_angles, 0) == pdPASS)
-        {
-            for(uint8_t i=0;i<6;i++)
-            {
-                dm_user_motor_angles[i] = dm_angles[i];
-            }
-        }
-        if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
-        {
-            arm_mode_pc_change_to_user_init_process();
-        }
-        else if(dm_arm_feedback_pub_msg.arm_control_state == PC_based_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
-        {
-            arm_mode_pc_change_to_pc_init_process();
-        }
-        if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller)//自定义控制模式
-        {
-
-            DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_user_motor_angles[Motor1]);
-            DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_user_motor_angles[Motor2]);
-            DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_user_motor_angles[Motor3]);
-            DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_user_motor_angles[Motor4]);
-            DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_user_motor_angles[Motor5]);
-            DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_user_motor_angles[Motor6]);
-            DMcontrol_motor_7(&hfdcan2,dm_arm_feedback_pub_msg.gripper_state);//夹爪控制
-        }
-        else if(dm_arm_feedback_pub_msg.arm_control_state == PC_based_Controller)//PC控制模式
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                dm_pc_motor_angles[i] = dm_receive_pc_cmd_arm_msg_data.joint_pos[i] * 57.3f;
-            }
-            DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_pc_motor_angles[Motor1]);
-            DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_pc_motor_angles[Motor2]);
-            DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_pc_motor_angles[Motor3]);
-            DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_pc_motor_angles[Motor4]);
-            DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_pc_motor_angles[Motor5]);
-            DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_pc_motor_angles[Motor6]);
-            DMcontrol_motor_7(&hfdcan2,dm_receive_pc_cmd_arm_msg_data.gripper_ctrl);//夹爪控制
-            if(dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state == 6 && pc_ctrl_process_last_state != 6)//完成第一个步骤
-            {
-                auto_ctrl_mode = AUTO_WAIT;
-            }
-            pc_ctrl_process_last_state = dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state;
-
-        }
-
-
-
-//        if (dmmotor_subscribe_movej_ref_data.seq != dmmotor_last_movej_seq)
+//        if (xQueueReceive(xControlQueue, dm_angles, 0) == pdPASS)
 //        {
-//            dmmotor_last_movej_seq = dmmotor_subscribe_movej_ref_data.seq;
-//
-//            if (dmmotor_subscribe_movej_ref_data.valid)
+//            for(uint8_t i=0;i<6;i++)
 //            {
-//                DMmotor_apply_movej_ref(&dmmotor_subscribe_movej_ref_data);
+//                dm_user_motor_angles[i] = dm_angles[i];
 //            }
 //        }
-//        DMcontrol_motor_7(&hfdcan2,gripper_state);//夹爪控制//一键夹取功能
+//        if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
+//        {
+//            arm_mode_change_init_process(dm_user_motor_angles);
+//        }
+//        else if(dm_arm_feedback_pub_msg.arm_control_state == PC_based_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
+//        {
+//            arm_mode_change_init_process(dm_pc_motor_angles);
+//        }
+//        if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller)//自定义控制模式
+//        {
+//
+//            DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_user_motor_angles[Motor1]);
+//            DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_user_motor_angles[Motor2]);
+//            DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_user_motor_angles[Motor3]);
+//            DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_user_motor_angles[Motor4]);
+//            DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_user_motor_angles[Motor5]);
+//            DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_user_motor_angles[Motor6]);
+//            DMcontrol_motor_7(&hfdcan2,dm_arm_feedback_pub_msg.gripper_state);//夹爪控制
+//        }
+//        else if(dm_arm_feedback_pub_msg.arm_control_state == PC_based_Controller)//PC控制模式
+//        {
+//            for (int i = 0; i < 6; i++)
+//            {
+//                dm_pc_motor_angles[i] = dm_receive_pc_cmd_arm_msg_data.joint_pos[i] * 57.3f;
+//            }
+//            DMcontrol_motor_1(&hfdcan3, &motor_controls[Motor1], dm_pc_motor_angles[Motor1]);
+//            DMcontrol_motor_2(&hfdcan3, &motor_controls[Motor2], dm_pc_motor_angles[Motor2]);
+//            DMcontrol_motor_3(&hfdcan2, &motor_controls[Motor3], dm_pc_motor_angles[Motor3]);
+//            DMcontrol_motor_4(&hfdcan2, &motor_controls[Motor4], dm_pc_motor_angles[Motor4]);
+//            DMcontrol_motor_5(&hfdcan2, &motor_controls[Motor5], dm_pc_motor_angles[Motor5]);
+//            DMcontrol_motor_6(&hfdcan2, &motor_controls[Motor6], dm_pc_motor_angles[Motor6]);
+//            DMcontrol_motor_7(&hfdcan2,dm_receive_pc_cmd_arm_msg_data.gripper_ctrl);//夹爪控制
+//            if(dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state == 6 && pc_ctrl_process_last_state != 6)//完成第一个步骤
+//            {
+//                auto_ctrl_mode = AUTO_WAIT;
+//            }
+//            pc_ctrl_process_last_state = dm_receive_pc_cmd_arm_msg_data.pc_ctrl_process_state;
+//
+//        }
+
+
+
+        if (dmmotor_subscribe_movej_ref_data.seq != dmmotor_last_movej_seq)
+        {
+            dmmotor_last_movej_seq = dmmotor_subscribe_movej_ref_data.seq;
+
+            if (dmmotor_subscribe_movej_ref_data.valid)
+            {
+                DMmotor_apply_movej_ref(&dmmotor_subscribe_movej_ref_data);
+            }
+        }
+        DMcontrol_motor_7(&hfdcan2,gripper_state);//夹爪控制//一键夹取功能
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 
 /* -------------------------------- 线程发布Topics信息 ------------------------------- */
