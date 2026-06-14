@@ -85,7 +85,7 @@ void arm_mode_change_init_process(float motor_angle[6])
 {
     test_git = 666;
     dm_motor_enable(&hfdcan3, &motor[Motor1]);
-    vTaskDelay(350); // 延时，等待电机稳定
+    vTaskDelay(300); // 延时，等待电机稳定
     pos_ctrl(&hfdcan3, motor[Motor1].id, -motor_angle[0]/57.3f, 0.5f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
