@@ -144,7 +144,7 @@ static bool MoveJ_StartFromCurrentFeedback(void)
         return false;
     }
 
-    // USART7_DebugPrintf("[MoveJ] start ok, total_time=%.3f\r\n", g_algo.planner.movej.prof.total_time);
+    USART7_DebugPrintf("[MoveJ] start ok, total_time=%.3f\r\n", g_algo.planner.movej.prof.total_time);
 
 
     return true;
@@ -174,10 +174,10 @@ static void Algorithm_HandlePoseCommand(void)
         return;
     }
 
-//    USART7_DebugPrintf("[Pose %lu] target = xyz(%.4f, %.4f, %.4f) ryp(%.4f, %.4f, %.4f)\r\n",
-//                       (unsigned long)pose_seq_local,
-//                       pose_local.X, pose_local.Y, pose_local.Z,
-//                       pose_local.ROLL, pose_local.YAW, pose_local.PITCH);
+    USART7_DebugPrintf("[Pose %lu] target = xyz(%.4f, %.4f, %.4f) ryp(%.4f, %.4f, %.4f)\r\n",
+                       (unsigned long)pose_seq_local,
+                       pose_local.X, pose_local.Y, pose_local.Z,
+                       pose_local.ROLL, pose_local.YAW, pose_local.PITCH);
 
     memset(g_algo.pose_plan.ik_cands, 0, sizeof(g_algo.pose_plan.ik_cands));
     g_algo.pose_plan.ik_cand_count = 0;
@@ -194,13 +194,13 @@ static void Algorithm_HandlePoseCommand(void)
         g_algo.pose_plan.last_ik_seq = pose_seq_local;
         g_algo.pose_plan.cmd_state = ALGO_CMD_IK_OK;
 
-//        USART7_DebugPrintf("[Pose %lu] IK ok, cand=%d\r\n",
-//                           (unsigned long)pose_seq_local,
-//                           g_algo.pose_plan.ik_cand_count);
-//        USART7_DebugPrintf("[Pose %lu] qik= %.3f %.3f %.3f %.3f %.3f %.3f\r\n",
-//                           (unsigned long)pose_seq_local,
-//                           g_algo.pose_plan.q_ik_target[0], g_algo.pose_plan.q_ik_target[1], g_algo.pose_plan.q_ik_target[2],
-//                           g_algo.pose_plan.q_ik_target[3], g_algo.pose_plan.q_ik_target[4], g_algo.pose_plan.q_ik_target[5]);
+        USART7_DebugPrintf("[Pose %lu] IK ok, cand=%d\r\n",
+                           (unsigned long)pose_seq_local,
+                           g_algo.pose_plan.ik_cand_count);
+        USART7_DebugPrintf("[Pose %lu] qik= %.3f %.3f %.3f %.3f %.3f %.3f\r\n",
+                           (unsigned long)pose_seq_local,
+                           g_algo.pose_plan.q_ik_target[0], g_algo.pose_plan.q_ik_target[1], g_algo.pose_plan.q_ik_target[2],
+                           g_algo.pose_plan.q_ik_target[3], g_algo.pose_plan.q_ik_target[4], g_algo.pose_plan.q_ik_target[5]);
 
         memcpy(g_algo.planner.q_target,
                g_algo.pose_plan.q_ik_target,
@@ -269,6 +269,7 @@ static void Algorithm_HandlePlannerStep(float dt)
                                                       g_algo.feedback.v_fb,
                                                       g_algo.planner.time_scale);//根据误差动态变化缩放因子到[0.15-1]
 
+
         dt_eff = dt * g_algo.planner.time_scale;
 
         if (!JointMoveJ_Update(&g_algo.planner.movej, dt_eff))
@@ -278,13 +279,15 @@ static void Algorithm_HandlePlannerStep(float dt)
         }
         else
         {
-            g_algo.planner.track_print_div++;
-            if (g_algo.planner.track_print_div >= 50)
+            g_algo.planner.track_print_div++;//分时间隔打印信息
+            if (g_algo.planner.track_print_div >= 100)
             {
                 g_algo.planner.track_print_div = 0;
-                USART7_DebugPrintf("[Track] qfb= %.3f %.3f %.3f | qref= %.3f %.3f %.3f\r\n",
-                                   g_algo.feedback.q_fb[0], g_algo.feedback.q_fb[1], g_algo.feedback.q_fb[2],
-                                   g_algo.planner.movej.q_ref[0], g_algo.planner.movej.q_ref[1], g_algo.planner.movej.q_ref[2]);
+                USART7_DebugPrintf("[Track] qfb= %.3f %.3f %.3f %.3f %.3f %.3f| qref= %.3f %.3f %.3f %.3f %.3f %.3f\r\n",
+                                   g_algo.feedback.q_fb[0], g_algo.feedback.q_fb[1], g_algo.feedback.q_fb[2],g_algo.feedback.q_fb[3], g_algo.feedback.q_fb[4], g_algo.feedback.q_fb[5],
+                                   g_algo.planner.movej.q_ref[0], g_algo.planner.movej.q_ref[1], g_algo.planner.movej.q_ref[2],g_algo.planner.movej.q_ref[3], g_algo.planner.movej.q_ref[4], g_algo.planner.movej.q_ref[5]);
+
+                USART7_DebugPrintf("[MoveJ] time_scale: %f\r\n",g_algo.planner.time_scale);
             }
         }
     }
@@ -406,7 +409,7 @@ void Algo_Step(float dt)
 {
     Algorithm_HandlePoseCommand();//通过目标点解得出最优的一组关节目标角度
     Algorithm_HandleMoveJStart();//得出让所有关节一起运动一起停止的时间和加减速段的时间和匀速段时间和每个关节运动的速度和加速度
-    Algorithm_HandlePlannerStep(dt);
+    Algorithm_HandlePlannerStep(dt);//通过dt得出下一进程需要发布的目标值和角度
 }
 
 void Algo_GetOutput(AlgoOutput_t *out)

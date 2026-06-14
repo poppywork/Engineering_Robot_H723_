@@ -69,9 +69,21 @@
 #define ALGO_INPUT_MODE_MANUAL_API     2
 #define ALGO_INPUT_MODE_DEMO_XYZRYP    3
 #define ALGO_INPUT_MODE_DEMO_POSE6D    4
+#define ALGO_INPUT_MODE_MANUAL_TRIGGER   5
+
+/* 手动触发控制变量（调试工具可直接修改） */
+volatile float g_man_x = 0.1f;
+volatile float g_man_y = 0.1f;
+volatile float g_man_z = 0.2f;
+volatile float g_man_roll = 0.0f;
+volatile float g_man_yaw = -3.1415f;
+volatile float g_man_pitch = -1.57f;
+volatile uint8_t g_man_trigger = 0;
+
+
 
 /* 在这里切换输入模式 */
-#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_TEST_CASE
+#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_MANUAL_TRIGGER
 
 /* -------------------------------- 离散控制参数 -------------------------------- */
 #define ALGO_DISCRETE_QUEUE_CAPACITY   16u
@@ -99,6 +111,7 @@ static float algorithm_task_start_dt = 0; // 监测线程开始时间
 static mat_type_t filtered_data[NUM_JOINTS]= {0};
 static float angles[NUM_JOINTS] = {0}; // 从队列中读取的角度值（度数）
 
+
 extern QueueHandle_t xKalmanOneQueue;
 extern QueueHandle_t xControlQueue; // 队列句柄
 /* -------------------------------- 算法输入输出缓存 -------------------------------- */
@@ -106,7 +119,7 @@ static AlgoOutput_t g_algo_out;
 static AlgoFeedback_t g_algo_fb;
 
 /* -------------------------------- 反馈解析相关 -------------------------------- */
-#define ACTIVE_MASK        0x3Fu    /* 当前只要求 joint[0..2] 反馈有效 */
+#define ACTIVE_MASK        0x3Fu    /* 当前只要求 joint[012345] 反馈有效 */
 
 static bool AlgorithmTask_BuildFeedback(AlgoFeedback_t *fb);
 /* -------------------------------- 测试点相关 -------------------------------- */
@@ -123,10 +136,10 @@ typedef struct
 
 static const AlgorithmTask_TestPoint_t g_task_test_list[] =
         {
-                {0.267902f, -0.05765f, -0.245f, -3.1415926f, 0.0f, 0.0f, "P0_zero"},
-                {0.230000f, -0.10000f, -0.220f, -3.1415926f, 0.0f, 0.0f, "P1"},
-                {0.180000f, -0.12000f, -0.180f, -3.1415926f, 0.0f, 0.0f, "P2"},
-                {0.220000f,  0.02000f, -0.200f, -3.1415926f, 0.0f, 0.0f, "P3"},
+                {0.267902f, -0.05765f, 0.245f, -3.1415926f, 0.0f, 0.0f, "P0_zero"},
+                {0.230000f, -0.10000f, 0.220f, -3.1415926f, 0.0f, 0.0f, "P1"},
+                {0.180000f, -0.12000f, 0.180f, -3.1415926f, 0.0f, 0.0f, "P2"},
+                {0.220000f,  0.02000f, 0.200f, -3.1415926f, 0.0f, 0.0f, "P3"},
         };
 
 #define TASK_TEST_COUNT ((uint32_t)(sizeof(g_task_test_list) / sizeof(g_task_test_list[0])))
@@ -356,9 +369,9 @@ static bool AlgorithmTask_EnqueuePose(const Pose6D_t *pose,
     return ok;
 }
 
-float xxx = 0.0f;
-float yyy = 0.0f;
-float zzz = 0.0f;
+float xxx = 0.1f;
+float yyy = 0.1f;
+float zzz = 0.2f;
 /* ---------------------------- 目标来源填充 ---------------------------- */
 /* 根据当前输入模式，把“目标来源”统一送进离散队列 */
 
@@ -399,7 +412,7 @@ static void AlgorithmTask_SourceFillStep(const AlgoFeedback_t *fb, const AlgoOut
         Pose6D_t pose;
         Pose6D_SetFromXYZ_RollYawPitch(&pose,
                                        xxx, yyy, zzz,
-                                       0.0f, 3.141592503f, -1.570796371f);
+                                       0.0f, -3.1415f, -1.57f);//将基坐标系按照EularAngle旋转（yaw-pitch-roll）,朝向以Z轴正方向为准
 
         if (AlgorithmTask_EnqueuePose(&pose,
                                       ALGO_SRC_DEMO_XYZRYP,
@@ -439,12 +452,33 @@ static void AlgorithmTask_SourceFillStep(const AlgoFeedback_t *fb, const AlgoOut
 //    AlgorithmTask_PostPoseTargetXYZRYP_Rad(xxx, yyy, zzz,
 //                                           0.0f, 3.141592503f, -1.570796371f);
 #endif
+
+#if (ALGO_INPUT_MODE == ALGO_INPUT_MODE_MANUAL_TRIGGER)
+    /* 手动触发一次性发送 */
+    if (g_man_trigger && !g_discrete_rt.waiting_finish && (AlgorithmTask_DiscreteQueueCount() == 0u))
+    {
+        Pose6D_t pose;
+        Pose6D_SetFromXYZ_RollYawPitch(&pose, g_man_x, g_man_y, g_man_z,
+                                       g_man_roll, g_man_yaw, g_man_pitch);
+        if (AlgorithmTask_EnqueuePose(&pose, ALGO_SRC_EXTERNAL_XYZRYP, 0, "manual_trigger"))
+        {
+            USART7_DebugPrintf("[MANUAL] trigger sent (%.3f,%.3f,%.3f,%.3f,%.3f,%.3f)\r\n",
+                               g_man_x, g_man_y, g_man_z,
+                               g_man_roll, g_man_yaw, g_man_pitch);
+            g_man_trigger = 0;
+        }
+    }
+#endif
+
+
 }
 
 /* ---------------------------- 活动命令完成后的收尾 ---------------------------- */
 
 static void AlgorithmTask_OnActiveCommandFinished(void)
 {
+
+    /*---------------------只针对ALGO_SRC_TEST_CASE这一种控制方式-----------------------------*/
     if (g_discrete_rt.active_cmd.source == ALGO_SRC_TEST_CASE)
     {
         g_test_next_index++;
@@ -453,6 +487,7 @@ static void AlgorithmTask_OnActiveCommandFinished(void)
             g_test_next_index = 0;
         }
     }
+    /*---------------------只针对ALGO_SRC_TEST_CASE这一种控制方式-----------------------------*/
 
     memset(&g_discrete_rt.active_cmd, 0, sizeof(g_discrete_rt.active_cmd));
     g_discrete_rt.waiting_finish = 0;
@@ -603,7 +638,7 @@ void AlgorithmTask_Entry(void const * argument)
 
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 
-        if (xQueueReceive(xKalmanOneQueue, angles, 0) == pdTRUE)
+        if (xQueueReceive(xKalmanOneQueue, angles, 0) == pdTRUE)//处理自定义控制器发来的控制命令，与自动解算无关
         {
             // 对接收的数据进行滤波处理
             KalmanFilterOne_Data(angles, filtered_data);
@@ -613,10 +648,10 @@ void AlgorithmTask_Entry(void const * argument)
         /* 1) 从Topic构造反馈 */
         AlgorithmTask_BuildFeedback(&g_algo_fb);
 
-        /* 2) 喂给算法层 */
-        Algo_SetFeedback(&g_algo_fb); //根据FK得出工具在基座标系上的坐标和朝向
+        /* 2) 喂给算法层,根据FK得出工具在基座标系上的坐标和朝向*/
+        Algo_SetFeedback(&g_algo_fb);
 
-        /* 3) 根据当前输入模式填充离散队列 */
+        /* 3) 根据当前输入模式填充离散目标队列 */
         AlgorithmTask_SourceFillStep(&g_algo_fb, &g_algo_out);
 
         /* 4) 离散执行器：统一发点/等完成/再发下一个 */

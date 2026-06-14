@@ -209,7 +209,7 @@ static void DMmotor_apply_movej_ref(const movej_ref_msg_t *ref)
 
     const float v_min_follow = 0.4f; // 有误差时最小追赶速度
     const float v_max_exec   = 6.0f;  // 执行层最大速度
-    const float pos_tol      = 0.001f; // 约 0.57 度
+    const float pos_tol      = 0.01f; // 约 0.57 度
     /* 无效轨迹，不发送 */
     if (ref == 0 || ref->valid == 0)
     {
@@ -230,8 +230,8 @@ static void DMmotor_apply_movej_ref(const movej_ref_msg_t *ref)
     }
 
     /* 按你原来的方向定义修正，1轴通常要核对是否需要负号 */
-    pos_ctrl(&hfdcan2, motor[Motor1].id, pos_cmd[0], vel_cmd[0]);
-    pos_ctrl(&hfdcan2, motor[Motor2].id,  pos_cmd[1], vel_cmd[1]);
+    pos_ctrl(&hfdcan3, motor[Motor1].id, pos_cmd[0], vel_cmd[0]);
+    pos_ctrl(&hfdcan3, motor[Motor2].id,  pos_cmd[1], vel_cmd[1]);
     pos_ctrl(&hfdcan2, motor[Motor3].id,  pos_cmd[2], vel_cmd[2]);
     pos_ctrl(&hfdcan2, motor[Motor4].id, pos_cmd[3], vel_cmd[3]);
     pos_ctrl(&hfdcan2, motor[Motor5].id, pos_cmd[4], vel_cmd[4]);
@@ -363,14 +363,14 @@ void DMmotorTask_Entry(void const * argument)
         motor_controls[i].calibrated = 0;
     }
 
-    dm_motor_enable(&hfdcan2, &motor[Motor1]);
+    dm_motor_enable(&hfdcan3, &motor[Motor1]);
     vTaskDelay(200); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor1].id, 0, 1.0f); // 发送控制命令
+    pos_ctrl(&hfdcan3, motor[Motor1].id, 0, 1.0f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
-    dm_motor_enable(&hfdcan2, &motor[Motor2]);
+    dm_motor_enable(&hfdcan3, &motor[Motor2]);
     vTaskDelay(200); // 延时，等待电机稳定
-    pos_ctrl(&hfdcan2, motor[Motor2].id, 0, 1.0f); // 发送控制命令
+    pos_ctrl(&hfdcan3, motor[Motor2].id, 0, 1.0f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
     for(int i=2;i<6;i++)
@@ -386,7 +386,22 @@ void DMmotorTask_Entry(void const * argument)
 
     arm_cmd.ctrl_mode = ARM_ENABLE; // 使能机械臂
     arm_cmd.last_mode = ARM_ENABLE;
-    vTaskDelay(2000); // 延时，等待电机稳定
+    vTaskDelay(1000); // 延时，等待电机稳定
+
+    dm_feedback_cache_update();
+    pos_ctrl(&hfdcan3, motor[Motor1].id, 0, 1.0f); // 发送控制命令
+    vTaskDelay(1); // 延时，等待电机稳定
+
+    pos_ctrl(&hfdcan3, motor[Motor2].id, 0, 1.0f); // 发送控制命令
+    vTaskDelay(1); // 延时，等待电机稳定
+
+    for(int i=2;i<6;i++)
+    {
+        pos_ctrl(&hfdcan2, motor[i].id, 0, 1.0f); // 发送控制命令
+        vTaskDelay(1); // 延时，等待电机稳定
+    }
+
+
 /* -------------------------------- 线程间Topics初始化 ------------------------------- */
     DMmotor_topic_sub_init();
     DMmotor_topic_pub_init();

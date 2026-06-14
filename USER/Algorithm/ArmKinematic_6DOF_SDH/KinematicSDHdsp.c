@@ -4,7 +4,7 @@
 
 #include "KinematicSDHdsp.h"
 #include "usart_task.h"
-
+#include "DMmotor_task.h"
 /**  关节角θ  沿 z?轴的偏移量 d?  沿 x?轴的长度 a?  绕 x?轴的扭转角α  **/
 // q[6] 要传弧度
 // theta_offset 也必须是弧度
@@ -125,9 +125,9 @@ void Pose6D_SetFromXYZ_RollYawPitch(Pose6D_t *pose,
     pose->YAW   = yaw;
     pose->PITCH = pitch;
 
-    pose->roll_deg  = roll  * RAD_TO_DEG;
-    pose->yaw_deg   = yaw   * RAD_TO_DEG;
-    pose->pitch_deg = pitch * RAD_TO_DEG;
+    pose->roll_deg  = roll  * RAD_TO_DEG_FACTOR;
+    pose->yaw_deg   = yaw   * RAD_TO_DEG_FACTOR;
+    pose->pitch_deg = pitch * RAD_TO_DEG_FACTOR;
 
     /* 让IK内部自己根据欧拉角去生成旋转矩阵 */
     pose->hasR = false;
@@ -187,7 +187,7 @@ static float IK_RotationAngleError(const float R1[9], const float R2[9])
         }
     }
 
-    /* theta = acos((trace(Rerr)-1)/2) */
+    /* theta = acos((trace(Rerr)-1)/2) (旋转矩阵的夹角和矩阵的迹的公式关系)*/
     trace_val = Rerr[0] + Rerr[4] + Rerr[8];
     cos_theta = 0.5f * (trace_val - 1.0f);
     cos_theta = IK_Clamp(cos_theta, -1.0f, 1.0f);
@@ -372,9 +372,9 @@ static void T06_ToPose6D(const float T06_buf[16], Pose6D_t *pose)
     pose->PITCH = euler[1];
     pose->ROLL  = euler[2];
 
-    pose->yaw_deg   = euler[0] * RAD_TO_DEG;
-    pose->pitch_deg = euler[1] * RAD_TO_DEG;
-    pose->roll_deg  = euler[2] * RAD_TO_DEG;
+    pose->yaw_deg   = euler[0] * RAD_TO_DEG_FACTOR;
+    pose->pitch_deg = euler[1] * RAD_TO_DEG_FACTOR;
+    pose->roll_deg  = euler[2] * RAD_TO_DEG_FACTOR;
 }
 
 //
@@ -559,13 +559,13 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
          * 得：
          *   R = ±sqrt(rho^2 - ds^2)
          * ===================================================== */
-        if (rho < fabsf(ds) - EPS) //太靠近基坐标系会碰撞
+        if (rho < fabsf(ds) - EPS) //不是可到达空间
         {
             *count_q123 = 0;
             return;
         }
 
-        if (fabsf(rho - fabsf(ds)) <= EPS)
+        if (fabsf(rho - fabsf(ds)) <= EPS)//太靠近基坐标系，形成肩部奇异有无穷个解
         {
             /* q1 奇异：两组肩型退化为一组 */
             float q1_keep = (q_last != NULL) ? q_last[0] : 0.0f;//进入奇异使用上一时刻的 J1 值（q_last[0]）作为当前解,如果无历史值,则默认取 0.0
@@ -635,10 +635,10 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
             X = Rproj;
             Z = d1 - zw;
 
-            Lf  = sqrtf(a3 * a3 + d4 * d4);////接下来的解算有点看不懂,用到了比较抽象的解算方法（头）
-            psi = atan2f(d4, a3);
+            Lf  = sqrtf(a3 * a3 + d4 * d4);//用到了a3cosu-d4sinu= sqart（a3?+d4?）cos(u+ψ)三角恒等变形
+            psi = atan2f(d4, a3);//psi=ψ
 
-            if (fabsf(a2) < EPS || Lf < EPS) {
+            if (fabsf(a2) < EPS || Lf < EPS) {//结果会不稳定（溢出或产生 NaN）
                 continue;
             }
 
@@ -667,7 +667,7 @@ void IK_Solve_Q123_All(const SDH_Param_t *table,
                 theta2_b = atan2f(Z, X) - atan2f(Lf * sB, a2 + Lf * cB);
             }
 
-            if (fabsf(fabsf(D) - 1.0f) <= EPS)
+            if (fabsf(fabsf(D) - 1.0f) <= EPS)//伸直或者折叠
             {
                 /* q2/q3 奇异：肘伸直/肘折叠 */
                 q123_set[count][0] = IK_WrapToPi(q1_list[ind_arm]);
@@ -787,7 +787,8 @@ static int IK_Solve_Q456_All(const float R03[9],
        R32 = R36[7] = -sin(q5)*sin(q6)
        R33 = R36[8] =  cos(q5)
     */
-    s5_abs = sqrtf(R36[6] * R36[6] + R36[7] * R36[7]);
+
+    s5_abs = sqrtf(R36[6] * R36[6] + R36[7] * R36[7]);//一般用sin来确定唯一角度
 
     /* ---------- 腕奇异：q5 = 0 or pi ---------- */
     if (s5_abs <= EPS) {
@@ -840,7 +841,7 @@ static int IK_Solve_Q456_All(const float R03[9],
         q456_set[0][2] = atan2f(-R36[7],  R36[6]);
 
         /* 解B：sin(q5) < 0 */
-        q456_set[1][1] = atan2f(-s5_abs, R36[8]);
+        q456_set[1][1] = atan2f(-s5_abs, R36[8]);//atan2f处理的优越性表现在求解出的范围在±pi，类似arcsin 值域只有 [-π/2, π/2]
         q456_set[1][0] = atan2f( R36[5],  R36[2]);
         q456_set[1][2] = atan2f( R36[7], -R36[6]);
 
@@ -873,6 +874,8 @@ static int Check_JointLimit_Internal(const float q[6], const JointLimit_t *limit
 
     for (i = 0; i < 6; i++) {
         if (q[i] < limit->min[i] || q[i] > limit->max[i]) {
+            USART7_DebugPrintf("[CheckJointLimit] Joint %d out of range: %.3f rad [%.3f, %.3f]\r\n",
+                               i+1, q[i], limit->min[i], limit->max[i]);
             return 0;
         }
     }
@@ -970,7 +973,7 @@ int IK_Solution_Validate(const SDH_Param_t *table,
     return Validate_Solution_Internal(table, q, wrist_offset, target, pos_tol, ori_tol);
 }
 
-void IK_Select_Best(IKCandidate_t cand[],
+void  IK_Select_Best(IKCandidate_t cand[],
                     int cand_count,
                     const float q_last[6],
                     float q_best[6])
@@ -986,8 +989,10 @@ void IK_Select_Best(IKCandidate_t cand[],
         return;
     }
 
-    for (i = 0; i < cand_count; i++) {
-        if (!cand[i].valid) {
+    for (i = 0; i < cand_count; i++)
+    {
+        if (!cand[i].valid) //经过FK回代后超过误差则valid=0
+        {
             continue;
         }
 
@@ -998,7 +1003,7 @@ void IK_Select_Best(IKCandidate_t cand[],
                 float dq = (q_last != NULL) ? IK_AngleDiff(cand[i].q[j], q_last[j]) : cand[i].q[j];
                 cost += w[j] * dq * dq;
             }
-
+            //如果有目标点很接近奇异点则会加固定的代价值
             for (k = 0; k < 3; k++) {
                 if (cand[i].flag[k] < 0) {
                     cost += singular_penalty;
@@ -1137,12 +1142,13 @@ int IK_Solve_All(const SDH_Param_t *table,
     }
 
     /* 1) 目标位姿 -> R06 + 腕心 pw */
-    IK_TargetPoseToR06Pw(target, wrist_offset, R06, pw);//将偏置向量转到基座标系，然后用目标向量减去这个向量，然后得出腕心相对于基坐标系的xyz
+    IK_TargetPoseToR06Pw(target, wrist_offset, R06, pw);//将偏置向量转到基座标系，然后用目标向量减去这个向量，然后得出腕心相对于基坐标系的xyz(求解的是腕心，目标是腕心前的工具中心)
 
     /* 2) 解前三轴全部分支 */
     IK_Solve_Q123_All(table, pw, q_last, q123_set, flag_q1_arm, flag_q23, &count_q123);
 
     if (count_q123 <= 0) {
+        USART7_DebugPrintf("[IK_Solve_All] ERROR: No solution for q123 (count_q123=%d)\r\n", count_q123);
         if (cand_count_out) *cand_count_out = 0;
         return 0;
     }
@@ -1222,8 +1228,10 @@ int IK_Solve_All(const SDH_Param_t *table,
     IK_Select_Best(local_cand, cand_count, q_last, q_best);
 
     /* 7) 输出候选解（提供分析调试） */
-    if (cand_out != NULL) {
-        for (i = 0; i < cand_count; i++) {
+    if (cand_out != NULL)
+    {
+        for (i = 0; i < cand_count; i++)
+        {
             cand_out[i] = local_cand[i];
         }
     }
@@ -1250,7 +1258,7 @@ int IK_Solve_All(const SDH_Param_t *table,
 static const float joint_sign[6] = { 1.0f, -1.0f, -1.0f, 1.0f, -1.0f, 1.0f };
 static const float joint_zero[6] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 
-static void JointLimit_EncToModel(const JointLimit_t *limit_enc,
+static void JointLimit_EncToModel(const JointLimit_t *limit_enc, //将电机编码器空间的关节限位转换到模型空间
                                   const float sign_map[6],
                                   const float q_zero[6],
                                   JointLimit_t *limit_model)
@@ -1324,11 +1332,10 @@ int IK_Solve_All_Enc(const float wrist_offset[3],
 
     if (!joint_map_inited)
     {
-
         Kinematic_MapInit();
     }
 
-    Joint_EncToModel(q_last_enc, q_last_model);
+    Joint_EncToModel(q_last_enc, q_last_model);//利用模型解算,所以这里的编码数据方向也要换成模型方向
 
     ok = IK_Solve_All(arm_sdh_table,
                       wrist_offset,

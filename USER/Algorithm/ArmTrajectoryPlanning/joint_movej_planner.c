@@ -1,4 +1,5 @@
 #include "joint_movej_planner.h"
+#include "usart_task.h"
 #include <string.h>
 #include <math.h>
 
@@ -121,12 +122,14 @@ bool JointMoveJ_Start(JointMoveJPlanner_t *jp,
     if (!JointMoveJ_CheckLimit(q0, limit))
     {
         jp->state = JP_FAULT;
+        USART7_DebugPrintf("Start Point Out Of Joint Limit");
         return false;
     }
 
     if (!JointMoveJ_CheckLimit(q1, limit))
     {
         jp->state = JP_FAULT;
+        USART7_DebugPrintf("End Point Out Of Joint Limit");
         return false;
     }
 
