@@ -45,7 +45,7 @@ static float DMmotor_task_delta = 0;    // 监测线程运行时间
 static float DMmotor_task_start_dt = 0; // 监测线程开始时间
 /* -------------------------------- 调试监测线程相关 --------------------------------- */
 
-
+int test_git =1;
 static pid_obj_t *execute_track_movej_planner_pid;
 static pid_config_t execute_track_movej_config = INIT_PID_CONFIG(0.45, 0.0, 0.012, 0.0, 4.3, PID_Trapezoid_Intergral);
 
@@ -83,8 +83,9 @@ struct arm_cmd_msg arm_cmd = {
 
 void arm_mode_change_init_process(float motor_angle[6])
 {
+    test_git = 666;
     dm_motor_enable(&hfdcan3, &motor[Motor1]);
-    vTaskDelay(200); // 延时，等待电机稳定
+    vTaskDelay(100); // 延时，等待电机稳定
     pos_ctrl(&hfdcan3, motor[Motor1].id, -motor_angle[0]/57.3f, 0.5f); // 发送控制命令
     vTaskDelay(200); // 延时，等待电机稳定
 
