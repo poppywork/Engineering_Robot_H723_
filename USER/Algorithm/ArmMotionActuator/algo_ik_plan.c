@@ -280,7 +280,7 @@ static void Algorithm_HandlePlannerStep(float dt)
         else
         {
             g_algo.planner.track_print_div++;//分时间隔打印信息
-            if (g_algo.planner.track_print_div >= 100)
+            if (g_algo.planner.track_print_div >= 500)
             {
                 g_algo.planner.track_print_div = 0;
                 USART7_DebugPrintf("[Track] qfb= %.3f %.3f %.3f %.3f %.3f %.3f| qref= %.3f %.3f %.3f %.3f %.3f %.3f\r\n",

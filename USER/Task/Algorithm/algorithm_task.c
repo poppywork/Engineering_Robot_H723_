@@ -83,11 +83,11 @@ volatile uint8_t g_man_trigger = 0;
 
 
 /* 在这里切换输入模式 */
-#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_MANUAL_TRIGGER
+#define ALGO_INPUT_MODE                ALGO_INPUT_MODE_TEST_CASE
 
 /* -------------------------------- 离散控制参数 -------------------------------- */
 #define ALGO_DISCRETE_QUEUE_CAPACITY   16u
-#define ALGO_DISCRETE_TIMEOUT_MS       8000u
+#define ALGO_DISCRETE_TIMEOUT_MS       20000u
 /* -------------------------------- 线程间通讯Topics相关 ------------------------------- */
 static dm_arm_feedback_msg_t algorithm_subscribe_arm_feedback_data;
 
@@ -136,10 +136,10 @@ typedef struct
 
 static const AlgorithmTask_TestPoint_t g_task_test_list[] =
         {
-                {0.267902f, -0.05765f, 0.245f, -3.1415926f, 0.0f, 0.0f, "P0_zero"},
-                {0.230000f, -0.10000f, 0.220f, -3.1415926f, 0.0f, 0.0f, "P1"},
-                {0.180000f, -0.12000f, 0.180f, -3.1415926f, 0.0f, 0.0f, "P2"},
-                {0.220000f,  0.02000f, 0.200f, -3.1415926f, 0.0f, 0.0f, "P3"},
+                {-0.02f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P0_zero"},
+                {0.07f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P1"},
+                {0.07f, -0.2f, 0.05f, 0.0f, -3.1415926f, -1.57f, "P2"},
+                {0.0f, 0.0f, 0.0f, 0.0f, -3.1415926f, -1.57f, "P3"},
         };
 
 #define TASK_TEST_COUNT ((uint32_t)(sizeof(g_task_test_list) / sizeof(g_task_test_list[0])))
@@ -369,9 +369,9 @@ static bool AlgorithmTask_EnqueuePose(const Pose6D_t *pose,
     return ok;
 }
 
-float xxx = 0.1f;
-float yyy = 0.1f;
-float zzz = 0.2f;
+float xxx = 0.07f;
+float yyy = -0.20f;
+float zzz = -0.05f;
 /* ---------------------------- 目标来源填充 ---------------------------- */
 /* 根据当前输入模式，把“目标来源”统一送进离散队列 */
 
