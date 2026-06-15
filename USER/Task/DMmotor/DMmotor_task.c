@@ -31,6 +31,9 @@ static int8_t pc_ctrl_process_last_state;
 static dm_arm_feedback_msg_t dm_arm_feedback_pub_msg = {0};
 static publisher_t *publish_dm_arm_feedback_topic = NULL;
 static subscriber_t *publish_dm_arm_ctrl_mode_topic = NULL;
+static subscriber_t *publish_gripper_ctrl_mode_topic = NULL;
+static subscriber_t *publish_mcu_gripper_ctrl_mode_topic = NULL;
+
 extern sbus_data_t sbus_data_fdb;
 
 static void DMmotor_topic_pub_init(void);
@@ -53,7 +56,10 @@ static float current_angle[6] = {0.0f};        // 实际的关节输出角度，
 static float dm_angles[6] = {0.0f};   // 队列读取值
 static float dm_pc_motor_angles[6] = {0.0f};   // 期望角度值
 static float dm_user_motor_angles[6] = {0.0f};   // 期望角度值
+
 Gripper_mode_e gripper_state = Gripper_OPEN;
+Gripper_mode_e mcu_gripper_state = Gripper_OPEN;
+
 //User_defined_Controller, //自定义模式控制器
 //PC_based_Controller,    //上位机控制
 static Arm_mode_e arm_control_state = User_defined_Controller;
@@ -426,13 +432,13 @@ void DMmotorTask_Entry(void const * argument)
 
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 
-//        if (xQueueReceive(xControlQueue, dm_angles, 0) == pdPASS)
-//        {
-//            for(uint8_t i=0;i<6;i++)
-//            {
-//                dm_user_motor_angles[i] = dm_angles[i];
-//            }
-//        }
+        if (xQueueReceive(xControlQueue, dm_angles, 0) == pdPASS)
+        {
+            for(uint8_t i=0;i<6;i++)
+            {
+                dm_user_motor_angles[i] = dm_angles[i];
+            }
+        }
 //        if(dm_arm_feedback_pub_msg.arm_control_state == User_defined_Controller && arm_control_last_state != dm_arm_feedback_pub_msg.arm_control_state)
 //        {
 //            arm_mode_change_init_process(dm_user_motor_angles);
@@ -474,17 +480,20 @@ void DMmotorTask_Entry(void const * argument)
 //        }
 
 
-
-        if (dmmotor_subscribe_movej_ref_data.seq != dmmotor_last_movej_seq)
-        {
-            dmmotor_last_movej_seq = dmmotor_subscribe_movej_ref_data.seq;
-
-            if (dmmotor_subscribe_movej_ref_data.valid)
+//        if(dm_arm_feedback_pub_msg.arm_control_state == MCU_based_Controller)
+//        {
+            if (dmmotor_subscribe_movej_ref_data.seq != dmmotor_last_movej_seq)
             {
-                DMmotor_apply_movej_ref(&dmmotor_subscribe_movej_ref_data);
+                dmmotor_last_movej_seq = dmmotor_subscribe_movej_ref_data.seq;
+
+                if (dmmotor_subscribe_movej_ref_data.valid)
+                {
+                    DMmotor_apply_movej_ref(&dmmotor_subscribe_movej_ref_data);
+                }
             }
-        }
-        DMcontrol_motor_7(&hfdcan2,gripper_state);//夹爪控制//一键夹取功能
+            DMcontrol_motor_7(&hfdcan2, mcu_gripper_state);//夹爪控制//一键夹取功能
+//        }
+
 /* -------------------------------- 线程代码编写段落 ------------------------------- */
 
 /* -------------------------------- 线程发布Topics信息 ------------------------------- */
@@ -513,6 +522,8 @@ static void DMmotor_topic_sub_init(void)
     subscribe_cmd_pc_arm_topic = sub_register("pc_cmd_arm_pub",sizeof(struct pc_cmd_arm_msg));
     subscribe_movej_ref_topic = sub_register("movej_ref_pub", sizeof(movej_ref_msg_t));
     publish_dm_arm_ctrl_mode_topic = sub_register("dm_arm_ctrl_mode", sizeof(Arm_mode_e));
+    publish_gripper_ctrl_mode_topic = sub_register("gripper_ctrl_mode", sizeof(Gripper_mode_e ));
+    publish_mcu_gripper_ctrl_mode_topic = sub_register("MCU_gripper_ctrl_mode", sizeof(Gripper_mode_e ));
 }
 
 /**
@@ -531,6 +542,8 @@ static void DMmotor_topic_sub_pull(void)
     sub_get_msg(subscribe_cmd_pc_arm_topic, &dm_receive_pc_cmd_arm_msg_data);
     sub_get_msg(subscribe_movej_ref_topic, &dmmotor_subscribe_movej_ref_data);
     sub_get_msg(publish_dm_arm_ctrl_mode_topic, &arm_control_state);
+    sub_get_msg(publish_gripper_ctrl_mode_topic, &gripper_state);
+    sub_get_msg(publish_mcu_gripper_ctrl_mode_topic, &mcu_gripper_state);
 }
 /* -------------------------------- 线程间通讯Topics相关 ------------------------------- */
 

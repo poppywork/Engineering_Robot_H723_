@@ -401,7 +401,7 @@ bool Algo_PostPoseTargetXYZRYP_Rad(float x, float y, float z,
                                    float roll, float yaw, float pitch)
 {
     Pose6D_t pose;
-    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch);
+    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch,0);
     return Algo_PostPoseTarget(&pose);
 }
 

@@ -80,7 +80,7 @@ volatile float g_man_yaw = -3.1415f;
 volatile float g_man_pitch = -1.57f;
 volatile uint8_t g_man_trigger = 0;
 
-
+Gripper_mode_e MCU_gripper_ctrl;
 
 /* 在这里切换输入模式 */
 #define ALGO_INPUT_MODE                ALGO_INPUT_MODE_TEST_CASE
@@ -93,6 +93,7 @@ static dm_arm_feedback_msg_t algorithm_subscribe_arm_feedback_data;
 
 static subscriber_t *subscribe_arm_feedback_topic;
 static publisher_t *publish_movej_ref_topic;
+static publisher_t *publish_MCU_gripper_ctrl_mode_topic;
 
 static movej_ref_msg_t algorithm_publish_movej_ref_data;
 static uint32_t movej_pub_seq = 0;
@@ -132,14 +133,16 @@ typedef struct
     float yaw;
     float pitch;
     const char *name;
+    uint8_t gripper;
 } AlgorithmTask_TestPoint_t;
 
 static const AlgorithmTask_TestPoint_t g_task_test_list[] =
         {
-                {-0.02f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P0_zero"},
-                {0.07f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P1"},
-                {0.07f, -0.2f, 0.05f, 0.0f, -3.1415926f, -1.57f, "P2"},
-                {0.0f, 0.0f, 0.0f, 0.0f, -3.1415926f, -1.57f, "P3"},
+                {-0.02f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P0_zero",Gripper_OPEN},
+                {0.07f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P1",Gripper_OPEN},
+                {0.07f, -0.2f, -0.05f, 0.0f, -3.1415926f, -1.57f, "P1",Gripper_CLOSE},
+                {0.07f, -0.2f, 0.05f, 0.0f, -3.1415926f, -1.57f, "P2",Gripper_CLOSE},
+                {0.0f, 0.0f, 0.0f, 0.0f, -3.1415926f, -1.57f, "P3",Gripper_CLOSE},
         };
 
 #define TASK_TEST_COUNT ((uint32_t)(sizeof(g_task_test_list) / sizeof(g_task_test_list[0])))
@@ -214,7 +217,7 @@ bool AlgorithmTask_PostPoseTargetXYZRYP_Rad(float x, float y, float z,
                                             float roll, float yaw, float pitch)
 {
     Pose6D_t pose;
-    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch);
+    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch,0);
 
     return AlgorithmTask_EnqueuePose(&pose,
                                      ALGO_SRC_EXTERNAL_XYZRYP,
@@ -392,7 +395,7 @@ static void AlgorithmTask_SourceFillStep(const AlgoFeedback_t *fb, const AlgoOut
 
         Pose6D_SetFromXYZ_RollYawPitch(&pose,
                                        pt->x, pt->y, pt->z,
-                                       pt->roll, pt->yaw, pt->pitch);
+                                       pt->roll, pt->yaw, pt->pitch,pt->gripper);
 
         if (AlgorithmTask_EnqueuePose(&pose,
                                       ALGO_SRC_TEST_CASE,
@@ -679,6 +682,7 @@ void AlgorithmTask_Entry(void const * argument)
 static void algorithm_topic_pub_init(void)
 {
     publish_movej_ref_topic = pub_register("movej_ref_pub", sizeof(movej_ref_msg_t));
+    publish_MCU_gripper_ctrl_mode_topic = pub_register("MCU_gripper_ctrl_mode", sizeof(Gripper_mode_e));
 }
 
 static void algorithm_topic_sub_init(void)
@@ -711,6 +715,7 @@ static void algorithm_topic_pub_push(void)
     }
 
     pub_push_msg(publish_movej_ref_topic, &algorithm_publish_movej_ref_data);
+    pub_push_msg(publish_MCU_gripper_ctrl_mode_topic, &MCU_gripper_ctrl);
 }
 
 static void algorithm_topic_sub_pull(void)
