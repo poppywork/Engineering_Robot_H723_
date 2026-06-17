@@ -295,6 +295,7 @@ static void Algorithm_HandlePlannerStep(float dt)
     {
         USART7_DebugPrintf("[MoveJ] planner fault\r\n");
     }
+
 }
 
 /* ---------------------------- 对外接口实现 ---------------------------- */
@@ -401,7 +402,7 @@ bool Algo_PostPoseTargetXYZRYP_Rad(float x, float y, float z,
                                    float roll, float yaw, float pitch)
 {
     Pose6D_t pose;
-    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch,0);
+    Pose6D_SetFromXYZ_RollYawPitch(&pose, x, y, z, roll, yaw, pitch);
     return Algo_PostPoseTarget(&pose);
 }
 

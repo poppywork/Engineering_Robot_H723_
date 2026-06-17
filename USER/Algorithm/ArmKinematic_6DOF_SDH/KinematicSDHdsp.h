@@ -70,7 +70,7 @@ typedef struct {
 
 void Pose6D_SetFromXYZ_RollYawPitch(Pose6D_t *pose,
                                     float x, float y, float z,
-                                    float roll, float yaw, float pitch,uint8_t gripper);
+                                    float roll, float yaw, float pitch);
 
 bool SDH_FK_ToPose6D(const SDH_Param_t table[6], const float q[6], Pose6D_t *pose);
 

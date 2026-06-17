@@ -1,4 +1,4 @@
-/**
+﻿/**
   ******************************************************************************
   * @file    algorithm_task.c
   * @author  Liu JiaJun(187353224@qq.com)
@@ -62,6 +62,7 @@ extern keyboard_control_t nuc_keyboard;
 extern vt13_remote_parsed_data_t vt13_remote_parsed_data_fdb;
 static pc_control_t pc_data;
 static pc_control_t nuc_data;
+
 static Arm_mode_e dm_arm_ctrl_mode;
 static Gripper_mode_e gripper_ctrl_mode;
 extern struct referee_fdb_msg referee_fdb;
@@ -265,5 +266,6 @@ void remote_to_cmd_sbus(void) {
         }
     }
 }
+
 
 

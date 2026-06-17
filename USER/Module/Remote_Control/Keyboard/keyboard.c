@@ -14,6 +14,7 @@
 #include "DMmotor_task.h"
 #include "cmd_task.h"
 #include "tim.h"
+#include "algorithm_task.h"
 
 /* key acceleration time */
 #define KEY_ACC_TIME     2200  //ms
@@ -304,7 +305,7 @@ void PC_keyboard_mouse(const pc_control_t *pc_control)
 //    }
 }
 
-
+static int  testtest = 0;
 void NUC_keyboard_mouse(const pc_control_t *pc_control)
 {
 
@@ -342,8 +343,10 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     key_state_machine(&nuc_keyboard.b,pc_control->keyboard.bit.B);
 
 // 左侧放置（原G键，右侧请自行调整）
-    if (nuc_keyboard.g.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT)
+    if (testtest == 1)
     {
+        testtest = 0;
+        AlgorithmTask_RunSequence(SEQ_LEFT_PLACE);
         for (int i = 0; i < 2; i++)
         {
             if (!left_full[i])
@@ -358,6 +361,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     }
 // 左侧抓取（原R键）
     if (nuc_keyboard.r.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
+        AlgorithmTask_RunSequence(SEQ_LEFT_GRAB);
         for (int i = 0; i < 2; i++) {
             if (left_full[i]) {
                 left_full[i] = 0;
@@ -371,6 +375,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
 
     // 右侧放置（原F键）
     if (nuc_keyboard.f.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
+        AlgorithmTask_RunSequence(SEQ_RIGHT_PLACE);
         for (int i = 0; i < 2; i++) {
             if (!right_full[i]) {
                 right_full[i] = 1;
@@ -384,6 +389,7 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
 
 // 右侧抓取（原B键）
     if (nuc_keyboard.b.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
+        AlgorithmTask_RunSequence(SEQ_RIGHT_GRAB);
         for (int i = 0; i < 2; i++) {
             if (right_full[i]) {
                 right_full[i] = 0;

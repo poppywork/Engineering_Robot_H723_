@@ -107,7 +107,7 @@ static void EulerAngleToRotMat(const float* _eulerAngles, float* _rotationM) {
 /** 目标Pose6D转换函数，传入弧度制角度 **/
 void Pose6D_SetFromXYZ_RollYawPitch(Pose6D_t *pose,
                                            float x, float y, float z,
-                                           float roll, float yaw, float pitch,uint8_t gripper)
+                                           float roll, float yaw, float pitch)
 {
     if (pose == NULL)
     {
@@ -133,7 +133,7 @@ void Pose6D_SetFromXYZ_RollYawPitch(Pose6D_t *pose,
 
     /* 让IK内部自己根据欧拉角去生成旋转矩阵 */
     pose->hasR = false;
-    MCU_gripper_ctrl = (gripper == 0) ? Gripper_OPEN : Gripper_CLOSE;
+
 
 }
 
