@@ -15,6 +15,7 @@
 #include "cmd_task.h"
 #include "tim.h"
 #include "algorithm_task.h"
+#include "usart_task.h"
 
 /* key acceleration time */
 #define KEY_ACC_TIME     2200  //ms
@@ -31,8 +32,8 @@ extern ramp_obj_t *nuc_km_vw_ramp; // 旋转控制斜坡，需在外部定义
 
 //-------------储存罐参数--------------
 extern Auto_ctrl_mode auto_ctrl_mode;
-static uint8_t left_full[2] = {0};   // 左侧两个罐子是否有物体
-static uint8_t right_full[2] = {0};   // 右侧两个罐子
+uint8_t left_full[2] = {0};   // 左侧两个罐子是否有物体
+uint8_t right_full[2] = {0};   // 右侧两个罐子
 //-------------储存罐参数--------------
 
 static float base_delta = 3.0f  / KEY_ACC_TIME;
@@ -304,8 +305,8 @@ void PC_keyboard_mouse(const pc_control_t *pc_control)
 //        arm_cmd.ctrl_mode = ARM_INIT;
 //    }
 }
-
-static int  testtest = 0;
+uint32_t store_1_pwm_set = 1833;
+uint32_t store_2_pwm_set = 1833;
 void NUC_keyboard_mouse(const pc_control_t *pc_control)
 {
 
@@ -343,31 +344,29 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
     key_state_machine(&nuc_keyboard.b,pc_control->keyboard.bit.B);
 
 // 左侧放置（原G键，右侧请自行调整）
-    if (testtest == 1)
+    if (nuc_keyboard.g.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT)
     {
-        testtest = 0;
-        AlgorithmTask_RunSequence(SEQ_LEFT_PLACE);
+        USART7_DebugPrintf("get nuc keyboard cmd\r\n");
         for (int i = 0; i < 2; i++)
         {
             if (!left_full[i])
             {
                 left_full[i] = 1;
-                // 驱动对应舵机到工作位
-                __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, i ? 1833 : 500);//500-2500
-                auto_ctrl_mode = AUTO_LEFT_PLACE;
+                AlgorithmTask_RunSequence(SEQ_LEFT_PLACE);
+                store_2_pwm_set = i ? 1833 : 500;
                 break;
             }
         }
     }
+
 // 左侧抓取（原R键）
     if (nuc_keyboard.r.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
-        AlgorithmTask_RunSequence(SEQ_LEFT_GRAB);
+
         for (int i = 0; i < 2; i++) {
             if (left_full[i]) {
+                AlgorithmTask_RunSequence(SEQ_LEFT_GRAB);
                 left_full[i] = 0;
-                // 驱动对应舵机到工作位
-                __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, i ?1833 : 500);//500-2500
-                auto_ctrl_mode = AUTO_LEFT_GRAB;
+                store_2_pwm_set = i ? 1833 : 500;
                 break;
             }
         }
@@ -375,13 +374,13 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
 
     // 右侧放置（原F键）
     if (nuc_keyboard.f.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
-        AlgorithmTask_RunSequence(SEQ_RIGHT_PLACE);
+
         for (int i = 0; i < 2; i++) {
             if (!right_full[i]) {
+                AlgorithmTask_RunSequence(SEQ_RIGHT_PLACE);
                 right_full[i] = 1;
-                // 驱动对应舵机到工作位
-                __HAL_TIM_SET_COMPARE(&htim1,  TIM_CHANNEL_1, i ? 1833 : 500);//500-2500
-                auto_ctrl_mode = AUTO_RIGHT_PLACE;
+                store_1_pwm_set = i ? 1833 : 500;
+
                 break;
             }
         }
@@ -389,17 +388,19 @@ void NUC_keyboard_mouse(const pc_control_t *pc_control)
 
 // 右侧抓取（原B键）
     if (nuc_keyboard.b.state == KEY_PRESS_LONG && auto_ctrl_mode == AUTO_WAIT) {
-        AlgorithmTask_RunSequence(SEQ_RIGHT_GRAB);
+
         for (int i = 0; i < 2; i++) {
             if (right_full[i]) {
+                AlgorithmTask_RunSequence(SEQ_RIGHT_GRAB);
                 right_full[i] = 0;
-                __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1 , i ? 1833 : 500);//500-2500
-                auto_ctrl_mode = AUTO_RIGHT_GRAB;
+                store_1_pwm_set = i ? 1833 : 500;
+
                 break;
             }
         }
     }
-
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1 ,store_1_pwm_set);//500-2500
+    __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_3, store_2_pwm_set);//500-2500
 
     //------------------------------------------储存罐控制-----------------------------------------
 

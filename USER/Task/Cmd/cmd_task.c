@@ -99,8 +99,6 @@ void CmdTask_Entry(void const * argument)
     nuc_km_vy_ramp = ramp_register(0, 200);  // 0 -2的累加次数
     nuc_km_vw_ramp = ramp_register(0, 200);
 
-    __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1, 500);//初始化储存罐
-    __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_3, 500);//初始化储存罐
 
     /* 获取原始键盘数据 */
     memset(&pc_data, 0, sizeof(pc_control_t));

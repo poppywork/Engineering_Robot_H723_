@@ -786,18 +786,32 @@ bool AlgorithmTask_RunSequence(uint8_t seq_id)
 {
     const AlgorithmTask_TestPoint_t *seq = NULL;
     bool ok = true;
+    uint8_t len = 0;
 
     if (g_manual_seq_active) return false;
 
     switch (seq_id) {
-        case SEQ_RIGHT_GRAB:  seq = g_seq_right_grab;  break;
-        case SEQ_RIGHT_PLACE: seq = g_seq_right_place; break;
-        case SEQ_LEFT_GRAB:   seq = g_seq_left_grab;   break;
-        case SEQ_LEFT_PLACE:  seq = g_seq_left_place;  break;
-        default: return false;
+        case SEQ_RIGHT_GRAB:
+            seq = g_seq_right_grab;
+            len = sizeof(g_seq_right_grab) / sizeof(g_seq_right_grab[0]);
+            break;
+        case SEQ_RIGHT_PLACE:
+            seq = g_seq_right_place;
+            len = sizeof(g_seq_right_place) / sizeof(g_seq_right_place[0]);
+            break;
+        case SEQ_LEFT_GRAB:
+            seq = g_seq_left_grab;
+            len = sizeof(g_seq_left_grab) / sizeof(g_seq_left_grab[0]);
+            break;
+        case SEQ_LEFT_PLACE:
+            seq = g_seq_left_place;
+            len = sizeof(g_seq_left_place) / sizeof(g_seq_left_place[0]);
+            break;
+        default:
+            return false;
     }
 
-    for (uint32_t i = 0; i < (sizeof(seq)/sizeof(seq)[0]); i++) {
+    for (uint32_t i = 0; i < len; i++) {
         Pose6D_t pose;
         Pose6D_SetFromXYZ_RollYawPitch(&pose,
                                        seq[i].x, seq[i].y, seq[i].z,
